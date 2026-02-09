@@ -14,13 +14,25 @@ func NewProductRepository(db *sql.DB) *ProductRepository {
 	return &ProductRepository{db: db}
 }
 
-func (repo *ProductRepository) GetProducts() ([]models.Product, error) {
+func (repo *ProductRepository) GetProducts(name string) ([]models.Product, error) {
+	// buat sebuah slice bertipe any / interface kososng
+	args := []any{}
+
 	// buat sebuah query untuk mengambil seluruh product
 	query := "SELECT id, name, price, stock FROM products"
 
+	if name != "" {
+		// buat query untuk mengambil product berdasarkan name
+		query += " WHERE name ILIKE $1"
+
+		// tambahkan query ke dalam slice
+		args = append(args, "%"+name+"%")
+	}
+
 	// ini adalah proses eksekusi query dan menampung hasilnya dalam variabel row dan juga err
 	// karena eksekusi ini mengembalikan dua data, yakni hasil query dan error
-	rows, err := repo.db.Query(query)
+	// jika name tidak kosong, maka query yang dipakai menggunakan WHERE dan kirim argumentnya.
+	rows, err := repo.db.Query(query, args...)
 
 	// cek jika terjadi error
 	// jika terjadi error, maka kembalikan nil dan error, kenapa?

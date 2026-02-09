@@ -40,9 +40,13 @@ func (h *ProductHandler) HandleProducts(w http.ResponseWriter, r *http.Request) 
 
 // jika methodnya GET, maka kesini
 func (h *ProductHandler) GetProducts(w http.ResponseWriter, r *http.Request) {
+	// mengambil parameter name dari URL yang dikirimkan
+	name := r.URL.Query().Get("name")
+
 	// eksekusi fungsi GetProducts pada ProductService
 	// services/product_service.go
-	products, err := h.service.GetProducts()
+	// tambahkan parameter name
+	products, err := h.service.GetProducts(name)
 	// cek jika ada error
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

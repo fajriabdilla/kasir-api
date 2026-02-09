@@ -13,10 +13,10 @@ func NewProductService(repo *repositories.ProductRepository) *ProductService {
 	return &ProductService{repo: repo}
 }
 
-func (s *ProductService) GetProducts() ([]models.Product, error) {
+func (s *ProductService) GetProducts(name string) ([]models.Product, error) {
 	// ini adalah fungsi yang ada di Repository Product
 	// repositories/product_repository.go
-	return s.repo.GetProducts()
+	return s.repo.GetProducts(name)
 }
 
 // buat fungsi CreateProduct
