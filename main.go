@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"kasir-api/database"
 	"kasir-api/handlers"
+	"kasir-api/middleware"
 	"kasir-api/repositories"
 	"kasir-api/services"
 	"log"
@@ -18,6 +19,7 @@ import (
 type Config struct {
 	Port   string `mapstructure:"PORT"`
 	DBConn string `mapstructure:"DB_CONN"`
+	APIKey string `mapstructure:"API_KEY"`
 }
 
 func main() {
@@ -37,6 +39,7 @@ func main() {
 		Port: viper.GetString("PORT"),
 		// ambil database connection di file .env
 		DBConn: viper.GetString("DB_CONN"),
+		APIKey: viper.GetString("API_KEY"),
 	}
 
 	// mendefinisikan address dan port untuk server
@@ -52,28 +55,30 @@ func main() {
 	}
 	defer db.Close()
 
+	apiKeyMiddleware := middleware.APIKey(config.APIKey)
+
 	// setup handler
 	productRepo := repositories.NewProductRepository(db)
 	productService := services.NewProductService(productRepo)
 	productHandler := handlers.NewProductHandler(productService)
-	http.HandleFunc("/api/products", productHandler.HandleProducts)
-	http.HandleFunc("/api/product/", productHandler.HandleProductById)
+	http.HandleFunc("/api/products", middleware.CORS(productHandler.HandleProducts))
+	http.HandleFunc("/api/product/", middleware.CORS(middleware.Logger(apiKeyMiddleware(productHandler.HandleProductById)))) // GET middleware.Logger(apiKeyMiddleware(productHandler.HandleProductById)))
 
 	categoryRepo := repositories.NewCategoryRepository(db)
 	categoryService := services.NewCategoryService(categoryRepo)
 	categoryHandler := handlers.NewCategoryHandler(categoryService)
-	http.HandleFunc("/api/categories", categoryHandler.HandleCategories)
-	http.HandleFunc("/api/category/", categoryHandler.HandleCategoryById)
+	http.HandleFunc("/api/categories", middleware.CORS(categoryHandler.HandleCategories))
+	http.HandleFunc("/api/category/", middleware.CORS(middleware.Logger(apiKeyMiddleware(categoryHandler.HandleCategoryById)))) // categoryHandler.HandleCategoryById)
 
 	transactionRepo := repositories.NewTransactionRepository(db)
 	transactionService := services.NewTransactionService(transactionRepo)
 	transactionHandler := handlers.NewTransactionHandler(transactionService)
-	http.HandleFunc("/api/checkout", transactionHandler.HandleCheckout) //POST
+	http.HandleFunc("/api/checkout", middleware.CORS(middleware.Logger(apiKeyMiddleware(transactionHandler.HandleCheckout)))) // POST
 
 	reportRepo := repositories.NewRepositoryReport(db)
 	reportService := services.NewServiceReport(reportRepo)
 	reportHandler := handlers.NewReportHandler(reportService)
-	http.HandleFunc("/api/report/hari-ini", reportHandler.HariIni)
+	http.HandleFunc("/api/report/hari-ini", middleware.CORS(middleware.Logger(reportHandler.HariIni))) // GET
 
 	// http://localhost:8080/health
 	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
